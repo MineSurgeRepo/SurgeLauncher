@@ -13,8 +13,14 @@ mediaDiscordURL = "https://discord.gg/MineSurge"
 [ejs.settings]
 sourceGithubLink = "https://github.com/dscalZi/SurgeLauncher"
 supportLink = "https://github.com/dscalZi/SurgeLauncher/issues"
+selectLanguage = "Select a Language"
+changeLanguageTitle = "Change the launcher language"
+changeLanguageDesc = "You can change the language in the list below. This text will not change if you change the language so you can find your wayback here to change it back"
 
 [ejs.welcome]
 welcomeHeader = "WELCOME TO MINESURGE"
 welcomeDescription = "The long-awaited merger between Lifesteal and HCF has finally arrived. Experience joy like no other with MineSurge." 
 welcomeDescCTA = "Your adventure awaits you today."
+
+[ejs.overlay]
+changedLanguageHeader = "You changed the previous language"
