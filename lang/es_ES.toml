@@ -48,6 +48,7 @@ accountSelectHeader = "Select an Account"
 accountSelectConfirm = "Select"
 accountSelectCancel = "Cancel"
 
+accountSelectManage = "Manage Accounts"
 [ejs.settings]
 navHeaderText = "Settings in espagnoles"
 navAccount = "Account"
