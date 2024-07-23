@@ -2,8 +2,12 @@
 const os     = require('os')
 const semver = require('semver')
 
-const DropinModUtil  = require('./assets/js/dropinmodutil')
+const fs = require('fs-extra');
+
+const LangLoader                                   = require('./assets/js/langloader')
+const DropinModUtil                                = require('./assets/js/dropinmodutil')
 const { MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR } = require('./assets/js/ipcconstants')
+const logger = LoggerUtil.getLogger('Settings')
 
 const settingsState = {
     invalid: new Set()
@@ -89,6 +93,19 @@ bindFileSelectors()
   * will be disabled until the value is corrected. This is an automated
   * process. More complex UI may need to be bound separately.
   */
+
+closeOnLaunchCheckbox  = document.querySelector('input[cValue="CloseOnLaunch"]')
+launchDetachedCheckbox = document.querySelector('input[cValue="LaunchDetached"]')
+
+closeOnLaunchCheckbox.addEventListener('change', function() {
+    if (this.checked) {
+        launchDetachedCheckbox.disabled = true
+        launchDetachedCheckbox.checked  = true
+    } else {
+        launchDetachedCheckbox.disabled = false
+    }
+})
+
 function initSettingsValidators(){
     const sEls = document.getElementById('settingsContainer').querySelectorAll('[cValue]')
     Array.from(sEls).map((v, index, arr) => {
@@ -734,6 +751,8 @@ function parseModulesForUI(mdls, submodules, servConf){
     let reqMods = ''
     let optMods = ''
 
+    resolveLanguageForUI()
+
     for(const mdl of mdls){
 
         if(mdl.rawModule.type === Type.ForgeMod || mdl.rawModule.type === Type.LiteMod || mdl.rawModule.type === Type.LiteLoader || mdl.rawModule.type === Type.FabricMod){
@@ -978,11 +997,70 @@ document.addEventListener('keydown', async (e) => {
     }
 })
 
+document.addEventListener('keydown', async (e) => {
+    if(getCurrentView() === VIEWS.settings && selectedSettingsTab === 'settingsTabLauncher'){
+        if(e.key === 'F5'){
+            await resolveLanguageForUI()
+        }
+    }
+})
+
 async function reloadDropinMods(){
     await resolveDropinModsForUI()
     bindDropinModsRemoveButton()
     bindDropinModFileSystemButton()
     bindModsToggleSwitch()
+}
+
+//Languages
+let langCodes = {
+    "ja_JP": "日本人",
+    "en_US": "English",
+    "es_ES": "Español",
+    "fr_FR": "Français",
+    "ko_KR": "한국어"
+} 
+
+async function resolveLanguageForUI() {
+    let LANGUAGES, SELECTED_LANGUAGE;
+
+    ConfigManager.getAllLanguages((err, languages) => {
+        if (err) {
+            console.error("Error:", err);
+        } else {
+            logger.info("Available languages:", languages);
+            LANGUAGES = languages;
+            SELECTED_LANGUAGE = ConfigManager.getCurrentLanguage();
+            setCurrentLanguageInUi(LANGUAGES, SELECTED_LANGUAGE);
+        }
+    });
+}
+
+
+function setCurrentLanguageInUi(arr, selected){
+    const cont = document.getElementById('settingsLangsOptions')
+    cont.innerHTML = ''
+    for(let opt of arr) {
+        const d = document.createElement('DIV')
+        d.innerHTML = langCodes[opt]
+        d.setAttribute('value', opt)
+        if(opt !== "_custom") {
+            if(opt === selected) {
+                d.setAttribute('selected', '')
+                document.getElementById('settingsLangSelected').innerHTML = langCodes[opt]
+            }
+            d.addEventListener('click', function(e) {
+                this.parentNode.previousElementSibling.innerHTML = this.innerHTML
+                for(let sib of this.parentNode.children){
+                    sib.removeAttribute('selected')
+                }
+                this.setAttribute('selected', '')
+                closeSettingsSelect()
+                ConfigManager.setLanguage(opt)
+            })  
+            cont.appendChild(d)
+        }
+    }
 }
 
 // Shaderpack
@@ -1453,7 +1531,7 @@ function populateAboutVersionInformation(){
  */
 function populateReleaseNotes(){
     $.ajax({
-        url: 'https://github.com/dscalzi/HeliosLauncher/releases.atom',
+        url: 'https://github.com/MineSurgeRepo/SurgeLauncher/releases.atom',
         success: (data) => {
             const version = 'v' + remote.app.getVersion()
             const entries = $(data).find('entry')

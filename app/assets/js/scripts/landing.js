@@ -133,14 +133,6 @@ document.getElementById('settingsMediaButton').onclick = async e => {
     switchView(getCurrentView(), VIEWS.settings)
 }
 
-// Bind avatar overlay button.
-document.getElementById('avatarOverlay').onclick = async e => {
-    await prepareSettings()
-    switchView(getCurrentView(), VIEWS.settings, 500, 500, () => {
-        settingsNavItemListener(document.getElementById('settingsNavAccount'), false)
-    })
-}
-
 // Bind selected account
 function updateSelectedAccount(authUser){
     let username = Lang.queryJS('landing.selectedAccount.noAccountSelected')
@@ -174,6 +166,12 @@ server_selection_button.innerHTML = '&#8226; ' + Lang.queryJS('landing.selectedS
 server_selection_button.onclick = async e => {
     e.target.blur()
     await toggleServerSelection(true)
+}
+
+// Bind avatar overlay button.
+document.getElementById('avatarOverlay').onclick = async e => {
+    e.target.blur()
+    await toggleAccountSelection(true, true)
 }
 
 // Update Mojang Status Color
@@ -961,6 +959,10 @@ async function loadNews(){
     const distroData = await DistroAPI.getDistribution()
     if(!distroData.rawDistribution.rss) {
         loggerLanding.debug('No RSS feed provided.')
+
+        // remove the news button
+        await $('#newsButton').fadeOut(250).promise()
+
         return null
     }
 

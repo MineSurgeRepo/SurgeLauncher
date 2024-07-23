@@ -1,15 +1,17 @@
 const fs   = require('fs-extra')
+const isDev          = require('./isdev')
 const { LoggerUtil } = require('helios-core')
 const os   = require('os')
 const path = require('path')
+const app = require('@electron/remote').app
 
 const logger = LoggerUtil.getLogger('ConfigManager')
 
 const sysRoot = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Application Support' : process.env.HOME)
 
-const dataPath = path.join(sysRoot, '.helioslauncher')
+const dataPath = path.join(sysRoot, '.surgelauncher')
 
-const launcherDir = require('@electron/remote').app.getPath('userData')
+const launcherDir = app.getPath('userData')
 
 /**
  * Retrieve the absolute path of the launcher directory.
@@ -81,10 +83,12 @@ const DEFAULT_CONFIG = {
             resWidth: 1280,
             resHeight: 720,
             fullscreen: false,
+            CloseOnLaunch: false,
             autoConnect: true,
             launchDetached: true
         },
         launcher: {
+            language: 'en_US',
             allowPrerelease: false,
             dataDirectory: dataPath
         }
@@ -734,6 +738,25 @@ exports.setFullscreen = function(fullscreen){
 }
 
 /**
+ * Check if the launcher should be closed when the game launch.
+ * 
+ * @param {boolean} def Optional. If true, the default value will be returned.
+ * @returns {boolean} Whether or not the launcher should be closed when the game launched.
+ */
+exports.getCloseOnLaunch = function(def = false){
+    return !def ? config.settings.game.CloseOnLaunch : DEFAULT_CONFIG.settings.game.CloseOnLaunch
+}
+
+/**
+ * Change the status if the launcher should be closed when the game launch.
+ * 
+ * @param {boolean} CloseOnLaunch Whether or not the launcher should be closed when the game launched.
+ */
+exports.setCloseOnLaunch = function(CloseOnLaunch){
+    config.settings.game.CloseOnLaunch = CloseOnLaunch
+}
+
+/**
  * Check if the game should auto connect to servers.
  * 
  * @param {boolean} def Optional. If true, the default value will be returned.
@@ -790,4 +813,63 @@ exports.getAllowPrerelease = function(def = false){
  */
 exports.setAllowPrerelease = function(allowPrerelease){
     config.settings.launcher.allowPrerelease = allowPrerelease
+}
+
+exports.getCurrentLanguage = function(def = false){
+    return !def ? config.settings.launcher.language : DEFAULT_CONFIG.settings.launcher.language
+}
+
+/**
+ * Change the current language
+ * 
+ * @param {boolean} lang The language that should be selected
+ */
+exports.setLanguage = function(lang){
+    config.settings.launcher.language = lang
+    exports.save()
+    app.relaunch()
+    app.quit()
+}
+
+/**
+ * Get the list of all available languages
+ * 
+ * Languages are now a resource
+ * this detects the environment of the launcher (if it's dev, if it's a MacOS release or a Windows/Ubuntu release) and applies the directory in any case
+ * this aims to fix the releases because before it only worked in the dev environment, it works on Windows but still needs testing on MacOS and Ubuntu
+ * 
+ * sorry for this shtty code LMAO
+ * 
+ * @param {function} callback
+ */
+exports.getAllLanguages = function(callback) {
+    if(isDev){
+        fs.readdir(path.join(process.cwd(), 'lang'), (err, files) => {
+            if (err) {
+                callback(err)
+            } else {
+                const fileNames = files.map(file => file.replace('.toml', ''))
+                callback(null, fileNames)
+            }
+        })
+    } else {
+    if(process.platform === 'darwin'){
+    fs.readdir(path.join(process.cwd(), 'Content', 'Resources', 'lang'), (err, files) => {
+        if (err) {
+            callback(err)
+        } else {
+            const fileNames = files.map(file => file.replace('.toml', ''))
+            callback(null, fileNames)
+        }
+    })
+    } else {
+    fs.readdir(path.join(process.cwd(), 'Resources', 'lang'), (err, files) => {
+        if (err) {
+            callback(err)
+        } else {
+            const fileNames = files.map(file => file.replace('.toml', ''))
+            callback(null, fileNames)
+        }
+    })
+    }}
 }

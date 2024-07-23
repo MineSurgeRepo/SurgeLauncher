@@ -7,8 +7,10 @@ const { getMojangOS, isLibraryCompatible, mcVersionAtLeast }  = require('helios-
 const { Type }              = require('helios-distribution-types')
 const os                    = require('os')
 const path                  = require('path')
+const remote = require('@electron/remote');
+const win = remote.getCurrentWindow();
 
-const ConfigManager            = require('./configmanager')
+const ConfigManager         = require('./configmanager')
 
 const logger = LoggerUtil.getLogger('ProcessBuilder')
 
@@ -82,6 +84,10 @@ class ProcessBuilder {
             child.unref()
         }
 
+        if(ConfigManager.getCloseOnLaunch()){
+            win.close();
+        }
+
         child.stdout.setEncoding('utf8')
         child.stderr.setEncoding('utf8')
 
@@ -94,6 +100,21 @@ class ProcessBuilder {
         })
         child.on('close', (code, signal) => {
             logger.info('Exited with code', code)
+            if(code != 0){
+                setOverlayContent(
+                    Lang.queryJS('processbuilder.exit.exitErrorHeader'),
+                    Lang.queryJS('processbuilder.exit.message') + code,
+                    Lang.queryJS('processbuilder.exit.copyCode')
+                )
+                setOverlayHandler(() => {
+                    copy(Lang.queryJS('processbuilder.exit.copyCodeText') + code)
+                    toggleOverlay(false)
+                })
+                setDismissHandler(() => {
+                    toggleOverlay(false)
+                })
+                toggleOverlay(true, true)
+            }
             fs.remove(tempNativePath, (err) => {
                 if(err){
                     logger.warn('Error while deleting temp dir', err)
@@ -368,7 +389,7 @@ class ProcessBuilder {
 
         // Java Arguments
         if(process.platform === 'darwin'){
-            args.push('-Xdock:name=HeliosLauncher')
+            args.push('-Xdock:name=SurgeLauncher')
             args.push('-Xdock:icon=' + path.join(__dirname, '..', 'images', 'minecraft.icns'))
         }
         args.push('-Xmx' + ConfigManager.getMaxRAM(this.server.rawServer.id))
@@ -419,7 +440,7 @@ class ProcessBuilder {
 
         // Java Arguments
         if(process.platform === 'darwin'){
-            args.push('-Xdock:name=HeliosLauncher')
+            args.push('-Xdock:name=SurgeLauncher')
             args.push('-Xdock:icon=' + path.join(__dirname, '..', 'images', 'minecraft.icns'))
         }
         args.push('-Xmx' + ConfigManager.getMaxRAM(this.server.rawServer.id))
