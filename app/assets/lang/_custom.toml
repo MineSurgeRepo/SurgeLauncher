@@ -5,6 +5,9 @@ title = "Surge"
 
 [ejs.landing]
 mediaGitHubURL = "https://github.com/MineSurgeRepo/SurgeLauncher"
+mediaTwitterURL = ""
+mediaInstagramURL = ""
+mediaYouTubeURL = ""
 mediaDiscordURL = "https://discord.gg/MineSurge"
 
 [ejs.settings]
